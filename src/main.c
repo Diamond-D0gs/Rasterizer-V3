@@ -85,10 +85,10 @@ void RasterizeTriangle(bmp_img* img, Vertice verts[], int index[], int indexLoc)
                 Vec3f bary = Barycentric2D(triangle, area, (Vec2i){x, y});
                 if (bary.u >= 0 && bary.v >= 0 && bary.w >= 0) {
                     RGB color;
-					color.r = (bary.u * verts[indexLoc].color.r) + (bary.v * verts[indexLoc+1].color.r) + (bary.w * verts[indexLoc+2].color.r);
-					color.g = (bary.u * verts[indexLoc].color.g) + (bary.v * verts[indexLoc+1].color.g) + (bary.w * verts[indexLoc+2].color.g);
-					color.b = (bary.u * verts[indexLoc].color.b) + (bary.v * verts[indexLoc+1].color.b) + (bary.w * verts[indexLoc+2].color.b);
-					bmp_pixel_init (&img->img_pixels[y][x], color.r, color.g, color.b);
+                        color.r = (bary.u * verts[indexLoc].color.r) + (bary.v * verts[indexLoc+1].color.r) + (bary.w * verts[indexLoc+2].color.r);
+                        color.g = (bary.u * verts[indexLoc].color.g) + (bary.v * verts[indexLoc+1].color.g) + (bary.w * verts[indexLoc+2].color.g);
+                        color.b = (bary.u * verts[indexLoc].color.b) + (bary.v * verts[indexLoc+1].color.b) + (bary.w * verts[indexLoc+2].color.b);
+                        bmp_pixel_init (&img->img_pixels[y][x], color.r, color.g, color.b);
                 }
             }
         }
