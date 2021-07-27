@@ -8,21 +8,21 @@ const int HEIGHT = 1024;
 
 float EdgeFunction(Vec2i A, Vec2i B, Vec2i P);
 void BoundingBox2D(const Vec2i triangle[], Vec2i* bboxmin, Vec2i* bboxmax);
-Vec3f Barycentric2D(Vec2i triangle[], const float area, Vec2i P);
+Vec3f Barycentric2D(const Vec2i triangle[], const float area, const Vec2i P);
 void RasterizeTriangle(bmp_img* img, Vertice verts[], int index[], int indexLoc);
 
 int main(void) {
     Vertice verts[4] = {
         {{12, 12, 0}, {255, 0, 0}, {0, 0}},
-        {{1012, 12, 0}, {0, 0, 255}, {1, 0}},
-        {{12, 1012, 0}, {0, 255, 0}, {0, 1}},
+        {{1012, 12, 0}, {0, 255, 0}, {1, 0}},
+        {{12, 1012, 0}, {0, 0, 255}, {0, 1}},
         {{1012, 1012, 0}, {255, 255, 255}, {1, 1}}};
     int index[6] = {0, 2, 3, 0, 3, 1};
 
     bmp_img img;
     bmp_img_init_df (&img, WIDTH, HEIGHT);
 
-    for (int i = 0; i < 6; i += 3) {
+    for (int i = 0; i < (sizeof(index)/sizeof(int)); i += 3) {
         RasterizeTriangle(&img, verts, index, i);
     }
     // Rasterization complete
@@ -54,15 +54,15 @@ void BoundingBox2D(const Vec2i triangle[], Vec2i* bboxmin, Vec2i* bboxmax) {
     }
 }
 
-Vec3f Barycentric2D(Vec2i triangle[], const float area, Vec2i P) {
+Vec3f Barycentric2D(const Vec2i triangle[], const float area, const Vec2i P) {
     Vec3f bary;
 
     // ABP
-    bary.u = EdgeFunction(triangle[0], triangle[1], P) / area;
+    bary.u = EdgeFunction(triangle[1], triangle[2], P) / area;
     // BCP
-    bary.v = EdgeFunction(triangle[1], triangle[2], P) / area;
+    bary.v = EdgeFunction(triangle[2], triangle[0], P) / area;
     // CAP
-    bary.w = EdgeFunction(triangle[2], triangle[0], P) / area;
+    bary.w = EdgeFunction(triangle[0], triangle[1], P) / area;
 
     return bary;
 }
