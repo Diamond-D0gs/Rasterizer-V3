@@ -57,11 +57,11 @@ void BoundingBox2D(const Vec2i triangle[], Vec2i* bboxmin, Vec2i* bboxmax) {
 Vec3f Barycentric2D(const Vec2i triangle[], const float area, const Vec2i P) {
     Vec3f bary;
 
-    // ABP
-    bary.u = EdgeFunction(triangle[1], triangle[2], P) / area;
     // BCP
-    bary.v = EdgeFunction(triangle[2], triangle[0], P) / area;
+    bary.u = EdgeFunction(triangle[1], triangle[2], P) / area;
     // CAP
+    bary.v = EdgeFunction(triangle[2], triangle[0], P) / area;
+    // ABP
     bary.w = EdgeFunction(triangle[0], triangle[1], P) / area;
 
     return bary;
@@ -73,15 +73,15 @@ void RasterizeTriangle(bmp_img* img, Vertice verts[], int index[], int indexLoc)
         (Vec2i){verts[index[indexLoc+1]].pos.x, verts[index[indexLoc+1]].pos.y},
         (Vec2i){verts[index[indexLoc+2]].pos.x, verts[index[indexLoc+2]].pos.y}};
 
-    printf("{%i, %i}, {%i, %i}, {%i, %i}\n", triangle[0].x, triangle[0].y, triangle[1].x, triangle[1].y, triangle[2].x, triangle[2].y);
+    //printf("{%i, %i}, {%i, %i}, {%i, %i}\n", triangle[0].x, triangle[0].y, triangle[1].x, triangle[1].y, triangle[2].x, triangle[2].y);
     
     float area = EdgeFunction(triangle[0], triangle[1], triangle[2]);
-    printf("%f\n", area);
+    //printf("%f\n", area);
     if (area > 0) {
         Vec2i bboxmin, bboxmax;
         BoundingBox2D(triangle, &bboxmin, &bboxmax);
 
-        printf("%i, %i, %i, %i\n", bboxmin.x, bboxmin.y, bboxmax.x, bboxmax.y);
+        //printf("%i, %i, %i, %i\n", bboxmin.x, bboxmin.y, bboxmax.x, bboxmax.y);
 
         // Rasterize triangle within its bounding box
         for (int y = bboxmin.y; y <= bboxmax.y; ++y) {
