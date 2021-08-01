@@ -7,9 +7,9 @@ const int WIDTH  = 1024;
 const int HEIGHT = 1024;
 
 float EdgeFunction(Vec2i A, Vec2i B, Vec2i P);
-void BoundingBox2D(const Vec2i triangle[], Vec2i* bboxmin, Vec2i* bboxmax);
-Vec3f Barycentric2D(const Vec2i triangle[], const float area, const Vec2i P);
-void RasterizeTriangle(bmp_img* img, Vertice verts[], int index[], int indexLoc);
+BBox2Di CalcBBox2D(const Vec2i* triangle);
+Vec3f Barycentric2D(const Vec2i* triangle, const float area, const Vec2i P);
+void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc);
 
 int main(void) {
     Vertice verts[4] = {
@@ -37,24 +37,26 @@ float EdgeFunction(Vec2i A, Vec2i B, Vec2i P) {
     return ((P.x - A.x) * (B.y - A.y) - (P.y - A.y) * (B.x - A.x));
 }
 
-void BoundingBox2D(const Vec2i triangle[], Vec2i* bboxmin, Vec2i* bboxmax) {
-    *bboxmin = triangle[0];
-    *bboxmax = triangle[0];
+BBox2Di CalcBBox2D(const Vec2i* triangle) {
+    BBox2Di bBox = {triangle[0], triangle[0]};
 
-    for (int i = 1; i < 3; ++i) {
-        if (triangle[i].x < bboxmin->x)
-            bboxmin->x = triangle[i].x;
-        else if (triangle[i].x > bboxmax->x)
-            bboxmax->x = triangle[i].x;
+    for (int i = 0; i < 3; ++i) {
+        if (triangle[i].x < bBox.min.x)
+            bBox.min.x = triangle[i].x;
+        else if (triangle[i].x > bBox.max.x)
+            bBox.max.x = triangle[i].x;
 
-        if (triangle[i].y < bboxmin->y)
-            bboxmin->y = triangle[i].y;
-        else if (triangle[i].y > bboxmax->y)
-            bboxmax->y = triangle[i].y;
+        if (triangle[i].y < bBox.min.y)
+            bBox.min.y = triangle[i].y;
+        else if (triangle[i].y > bBox.max.y)
+            bBox.max.y = triangle[i].y;   
     }
+
+    return bBox;
 }
 
-Vec3f Barycentric2D(const Vec2i triangle[], const float area, const Vec2i P) {
+// Area is the area of the edge function, or twice the triangle.
+Vec3f Barycentric2D(const Vec2i* triangle, const float area, const Vec2i P) {
     Vec3f bary;
 
     // BCP
@@ -67,25 +69,19 @@ Vec3f Barycentric2D(const Vec2i triangle[], const float area, const Vec2i P) {
     return bary;
 }
 
-void RasterizeTriangle(bmp_img* img, Vertice verts[], int index[], int indexLoc) {
+void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
     Vec2i triangle[3] = {
         (Vec2i){verts[index[indexLoc]].pos.x, verts[index[indexLoc]].pos.y},
         (Vec2i){verts[index[indexLoc+1]].pos.x, verts[index[indexLoc+1]].pos.y},
         (Vec2i){verts[index[indexLoc+2]].pos.x, verts[index[indexLoc+2]].pos.y}};
 
-    //printf("{%i, %i}, {%i, %i}, {%i, %i}\n", triangle[0].x, triangle[0].y, triangle[1].x, triangle[1].y, triangle[2].x, triangle[2].y);
-    
+    // Area is the area of the edge function, or twice the triangle.
     float area = EdgeFunction(triangle[0], triangle[1], triangle[2]);
-    //printf("%f\n", area);
     if (area > 0) {
-        Vec2i bboxmin, bboxmax;
-        BoundingBox2D(triangle, &bboxmin, &bboxmax);
-
-        //printf("%i, %i, %i, %i\n", bboxmin.x, bboxmin.y, bboxmax.x, bboxmax.y);
-
+        BBox2Di bBox = CalcBBox2D(triangle);
         // Rasterize triangle within its bounding box
-        for (int y = bboxmin.y; y <= bboxmax.y; ++y) {
-            for (int x = bboxmin.x; x <= bboxmax.x; ++x) {
+        for (int y = bBox.min.y; y <= bBox.max.y; ++y) {
+            for (int x = bBox.min.x; x <= bBox.max.x; ++x) {
                 Vec3f bary = Barycentric2D(triangle, area, (Vec2i){x, y});
                 if (bary.u >= 0 && bary.v >= 0 && bary.w >= 0) {
                     RGB color = {

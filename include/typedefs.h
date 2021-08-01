@@ -33,3 +33,7 @@ typedef struct Vertice {
 	RGB color;
 	Vec2i uv;
 } Vertice;
+
+typedef struct BBox2Di {
+	Vec2i min, max;
+} BBox2Di;
