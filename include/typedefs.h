@@ -28,6 +28,11 @@ typedef union Vec3f {
 	struct {float u, v, w;};
 } Vec3f;
 
+typedef union Vec3i {
+	struct {int x, y, z;};
+	struct {int u, v, w;};
+} Vec3i;
+
 typedef struct Vertice {
 	Vec3f pos;
 	RGB color;
