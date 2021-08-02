@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include "veclib.h"
 #include "typedefs.h"
 #include "libbmp.h"
 
@@ -76,9 +77,16 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
         (Vec2i){verts[index[indexLoc+2]].pos.x, verts[index[indexLoc+2]].pos.y}};
     // Area is the area of the edge function, or twice the triangle.
     int area = EdgeFunction(triangle[0], triangle[1], triangle[2]);
+    // Only operate on the triangle if its area is positive
     if (area > 0) {
+        // Calculate the differences
+        Vec3i A = {(triangle[1].y - triangle[2].y), (triangle[2].y - triangle[0].y), (triangle[0].y - triangle[1].y)};
+        Vec3i B = {(triangle[2].x - triangle[1].x), (triangle[0].x - triangle[2].x), (triangle[1].x - triangle[0].x)};
+        // Calculate the bounding box
         BBox2Di bBox = CalcBBox2D(triangle);
+        // Set P to the minimum corner of the bounding box
         Vec2i P = bBox.min;
+        // Calculate barycentric coordinates to the minimum corner
         Vec3i row = Barycentric2D(triangle, P);
         // Rasterize triangle within its bounding box
         for (int y = bBox.min.y; y <= bBox.max.y; ++y) {
@@ -93,14 +101,10 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
                     bmp_pixel_init (&img->img_pixels[y][x], color.r, color.g, color.b);
                 }
                 // Step to the right
-                bary.u += (triangle[1].y - triangle[2].y);
-                bary.v += (triangle[2].y - triangle[0].y);
-                bary.w += (triangle[0].y - triangle[1].y);
+                Vec3i_add_eq(&bary, A);
             }
             // Step one row
-            row.u += (triangle[2].x - triangle[1].x);
-            row.v += (triangle[0].x - triangle[2].x);
-            row.w += (triangle[1].x - triangle[0].x);
+            Vec3i_add_eq(&row, B);
         }
     }
 }
