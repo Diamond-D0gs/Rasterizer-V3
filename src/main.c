@@ -84,10 +84,8 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
         Vec3i B = {(triangle[2].x - triangle[1].x), (triangle[0].x - triangle[2].x), (triangle[1].x - triangle[0].x)};
         // Calculate the bounding box
         BBox2Di bBox = CalcBBox2D(triangle);
-        // Set P to the minimum corner of the bounding box
-        Vec2i P = bBox.min;
-        // Calculate barycentric coordinates to the minimum corner
-        Vec3i row = Barycentric2D(triangle, P);
+        // Calculate barycentric coordinates to the minimum corner of the bounding box
+        Vec3i row = Barycentric2D(triangle, bBox.min);
         // Rasterize triangle within its bounding box
         for (int y = bBox.min.y; y <= bBox.max.y; ++y) {
             Vec3i bary = row;
