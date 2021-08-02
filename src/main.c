@@ -80,8 +80,8 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
     // Only operate on the triangle if its area is positive
     if (area > 0) {
         // Calculate the differences
-        Vec3i A = {(triangle[1].y - triangle[2].y), (triangle[2].y - triangle[0].y), (triangle[0].y - triangle[1].y)};
-        Vec3i B = {(triangle[2].x - triangle[1].x), (triangle[0].x - triangle[2].x), (triangle[1].x - triangle[0].x)};
+        Vec3i Ystep = {{triangle[1].y - triangle[2].y, triangle[2].y - triangle[0].y, triangle[0].y - triangle[1].y}};
+        Vec3i Xstep = {{triangle[2].x - triangle[1].x, triangle[0].x - triangle[2].x, triangle[1].x - triangle[0].x}};
         // Calculate the bounding box
         BBox2Di bBox = CalcBBox2D(triangle);
         // Calculate barycentric coordinates to the minimum corner of the bounding box
@@ -91,7 +91,7 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
             Vec3i bary = row;
             for (int x = bBox.min.x; x <= bBox.max.x; ++x) {
                 if ((bary.u | bary.v | bary.w) >= 0) {
-                    Vec3f weight = {bary.u/(float)area, bary.v/(float)area, bary.w/(float)area};
+                    Vec3f weight = {{bary.u/(float)area}, {bary.v/(float)area}, {bary.w/(float)area}};
                     RGB color = {
                         color.r = (weight.u * verts[index[indexLoc]].color.r) + (weight.v * verts[index[indexLoc+1]].color.r) + (weight.w * verts[index[indexLoc+2]].color.r),
                         color.g = (weight.u * verts[index[indexLoc]].color.g) + (weight.v * verts[index[indexLoc+1]].color.g) + (weight.w * verts[index[indexLoc+2]].color.g),
@@ -99,10 +99,10 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
                     bmp_pixel_init (&img->img_pixels[y][x], color.r, color.g, color.b);
                 }
                 // Step to the right
-                Vec3i_add_eq(&bary, A);
+                Vec3i_add_eq(&bary, Ystep);
             }
             // Step one row
-            Vec3i_add_eq(&row, B);
+            Vec3i_add_eq(&row, Xstep);
         }
     }
 }
