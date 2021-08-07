@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <immintrin.h>
 #include "veclib.h"
 #include "typedefs.h"
 #include "libbmp.h"
@@ -9,7 +10,7 @@ const int HEIGHT = 1024;
 
 int EdgeFunction(Vec2i A, Vec2i B, Vec2i P);
 BBox2Di CalcBBox2D(const Vec2i* triangle);
-Vec3i Barycentric2D(const Vec2i* triangle, const Vec2i P);
+__m128i Barycentric2D(const Vec2i* triangle, const Vec2i P);
 void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc);
 
 int main(void) {
@@ -56,17 +57,11 @@ BBox2Di CalcBBox2D(const Vec2i* triangle) {
     return bBox;
 }
 
-Vec3i Barycentric2D(const Vec2i* triangle, const Vec2i P) {
-    Vec3i bary;
-
-    // BCP
-    bary.u = EdgeFunction(triangle[1], triangle[2], P);
-    // CAP
-    bary.v = EdgeFunction(triangle[2], triangle[0], P);
-    // ABP
-    bary.w = EdgeFunction(triangle[0], triangle[1], P);
-
-    return bary;
+__m128i Barycentric2D(const Vec2i* triangle, const Vec2i P) {
+    return (_mm_setr_epi32(
+        EdgeFunction(triangle[1], triangle[2], P),
+        EdgeFunction(triangle[2], triangle[0], P),
+        EdgeFunction(triangle[0], triangle[1], P), 0));
 }
 
 // Optimizations derived from (https://fgiesen.wordpress.com/2013/02/10/optimizing-the-basic-rasterizer/)
@@ -80,29 +75,29 @@ void RasterizeTriangle(bmp_img* img, Vertice* verts, int* index, int indexLoc) {
     // Only operate on the triangle if its area is positive
     if (area > 0) {
         // Calculate the differences
-        Vec3i Ystep = {{triangle[1].y - triangle[2].y, triangle[2].y - triangle[0].y, triangle[0].y - triangle[1].y}};
-        Vec3i Xstep = {{triangle[2].x - triangle[1].x, triangle[0].x - triangle[2].x, triangle[1].x - triangle[0].x}};
+        __m128i Ystep = _mm_setr_epi32(triangle[1].y - triangle[2].y, triangle[2].y - triangle[0].y, triangle[0].y - triangle[1].y, 0);
+        __m128i Xstep = _mm_setr_epi32(triangle[2].x - triangle[1].x, triangle[0].x - triangle[2].x, triangle[1].x - triangle[0].x, 0);
         // Calculate the bounding box
         BBox2Di bBox = CalcBBox2D(triangle);
         // Calculate barycentric coordinates to the minimum corner of the bounding box
-        Vec3i row = Barycentric2D(triangle, bBox.min);
+        __m128i row = Barycentric2D(triangle, bBox.min);
         // Rasterize triangle within its bounding box
         for (int y = bBox.min.y; y <= bBox.max.y; ++y) {
-            Vec3i bary = row;
+            __m128i bary = row;
             for (int x = bBox.min.x; x <= bBox.max.x; ++x) {
-                if ((bary.u | bary.v | bary.w) >= 0) {
-                    Vec3f weight = {{bary.u/(float)area}, {bary.v/(float)area}, {bary.w/(float)area}};
+                if (_mm_ucomige_ss(_mm_castsi128_ps(bary), _mm_setzero_ps())) {
+                    __m128 vweight = _mm_div_ps(bary, _mm_set_ps1((float)area));
                     RGB color = {
-                        color.r = (weight.u * verts[index[indexLoc]].color.r) + (weight.v * verts[index[indexLoc+1]].color.r) + (weight.w * verts[index[indexLoc+2]].color.r),
-                        color.g = (weight.u * verts[index[indexLoc]].color.g) + (weight.v * verts[index[indexLoc+1]].color.g) + (weight.w * verts[index[indexLoc+2]].color.g),
-                        color.b = (weight.u * verts[index[indexLoc]].color.b) + (weight.v * verts[index[indexLoc+1]].color.b) + (weight.w * verts[index[indexLoc+2]].color.b)};
+                        (vweight[0] * verts[index[indexLoc]].color.r) + (vweight[1] * verts[index[indexLoc+1]].color.r) + (vweight[2] * verts[index[indexLoc+2]].color.r),
+                        (vweight[0] * verts[index[indexLoc]].color.g) + (vweight[1] * verts[index[indexLoc+1]].color.g) + (vweight[2] * verts[index[indexLoc+2]].color.g),
+                        (vweight[0] * verts[index[indexLoc]].color.b) + (vweight[1] * verts[index[indexLoc+1]].color.b) + (vweight[2] * verts[index[indexLoc+2]].color.b)};
                     bmp_pixel_init (&img->img_pixels[y][x], color.r, color.g, color.b);
                 }
                 // Step to the right
-                Vec3i_add_eq(&bary, Ystep);
+                bary = _mm_add_epi32(bary, Ystep);
             }
             // Step one row
-            Vec3i_add_eq(&row, Xstep);
+            row = _mm_add_epi32(row, Xstep);
         }
     }
 }

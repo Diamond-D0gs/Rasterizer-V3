@@ -4,6 +4,9 @@
 #ifndef TYPEDEFS_H
 #define TYPEDEFS_H
 
+typedef int int3 __attribute__((ext_vector_type(3)));
+typedef float float3 __attribute__((ext_vector_type(3)));
+
 typedef struct RGB {
 	uint8_t r, g, b;
 } RGB;
